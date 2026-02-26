@@ -27,13 +27,9 @@ from pathlib import Path
 from src.strategies.baselines import ALLC, ALLD, RAND, TFT, TF2T, STFT
 from src.game.engine import play_tournament
 
-N_RUNS = 100
-SEED_START = 0
-ROUNDS = 200
-
-
-def build_strategies():
-    return [
+def main():
+    # --- 1. SET UP THE BASELINE STRATEGIES ---
+    strategies = [
         ALLC("ALLC"),
         ALLD("ALLD"),
         RAND("RAND"),
@@ -42,80 +38,42 @@ def build_strategies():
         STFT("STFT")
     ]
 
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Run baseline IPD tournament with multi-seed summary."
-    )
-    parser.add_argument(
-        "--runs",
-        type=int,
-        default=N_RUNS,
-        help="Number of tournament runs with different seeds (default: 100)."
-    )
-    parser.add_argument(
-        "--seed-start",
-        type=int,
-        default=SEED_START,
-        help="Starting seed; run i uses seed_start + i (default: 0)."
-    )
-    parser.add_argument(
-        "--rounds",
-        type=int,
-        default=ROUNDS,
-        help="Rounds per head-to-head match (default: 200)."
-    )
-    return parser.parse_args()
-
-
-def main(runs=N_RUNS, seed_start=SEED_START, rounds=ROUNDS):
-    if runs < 1:
-        raise ValueError("--runs must be >= 1")
-    if rounds < 1:
-        raise ValueError("--rounds must be >= 1")
-
-    all_results = []
-    for run_idx in range(runs):
-        random.seed(seed_start + run_idx)
-        results = play_tournament(build_strategies(), rounds=rounds)
-        all_results.append(results)
-
-    first_run_results = all_results[0]
-
-    print(f"Tournament Results (run 1 of {runs}, rounds={rounds}):")
-    for name, score in first_run_results.items():
-        print(f"{name}: {score}")
-
-    strategy_names = list(first_run_results.keys())
-    summary_rows = []
-    for name in strategy_names:
-        scores = [run[name] for run in all_results]
-        summary_rows.append({
-            "strategy": name,
-            "mean_score": statistics.mean(scores),
-            "std_score": statistics.pstdev(scores)
-        })
-
-    summary_rows.sort(key=lambda row: row["mean_score"], reverse=True)
-
-    print(f"\nTournament Summary ({runs} runs, rounds={rounds}):")
-    for row in summary_rows:
-        print(
-            f"{row['strategy']}: mean={row['mean_score']:.2f}, "
-            f"std={row['std_score']:.2f}"
-        )
-
-    # SAVE CSV
-    out = Path("results/tables/baselines_tournament.csv")
-    out.parent.mkdir(parents=True, exist_ok=True)
-
-    with out.open("w", newline="") as f:
+    # --- 2. RUN STANDARD TOURNAMENT ---
+    print("\n" + "="*30)
+    print("RUNNING STANDARD TOURNAMENT")
+    print("="*30)
+    
+    standard_results = play_tournament(strategies, rounds=200)
+    
+    # Save and Print Standard results
+    with open("baselines_standard.csv", "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["strategy", "score"])
-        for name, score in first_run_results.items():
+        writer.writerow(["Strategy", "Score"])
+        for name in standard_results:
+            score = standard_results[name]
+            print(f"{name}: {score}") # Print to terminal
             writer.writerow([name, score])
 
-    print("Saved baselines_tournament.csv")
+    # --- 3. RUN STRESS TEST (Adding 3 more ALLD) ---
+    print("\n" + "="*30)
+    print("RUNNING STRESS TEST (+3 ALLD)")
+    print("="*30)
+    
+    stress_strategies = strategies + [ALLD("ALLD_2"), ALLD("ALLD_3"), ALLD("ALLD_4")]
+    stress_results = play_tournament(stress_strategies, rounds=200)
+
+    # Save and Print Stress Test results
+    with open("baselines_stress_test.csv", "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["Strategy", "Score"])
+        for name in stress_results:
+            score = stress_results[name]
+            print(f"{name}: {score}") # Print to terminal
+            writer.writerow([name, score])
+
+    print("\n" + "-"*30)
+    print("Done! CSV files generated successfully.")
+    print("-"*30)
 
     summary_out = Path("results/tables/baselines_tournament_summary.csv")
     with summary_out.open("w", newline="") as f:
