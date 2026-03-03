@@ -4,6 +4,15 @@ This project simulates the Iterated Prisoner’s Dilemma (IPD) and applies optim
 
 ---
 
+## 📚 Documentation Map
+
+- Architecture overview: `report/architecture_overview.md`
+- Experiment playbook (commands + outputs): `report/experiment_playbook.md`
+- Results interpretation guide: `report/results_interpretation.md`
+- Optimization write-up: `report/optimization.md`
+
+---
+
 ## ✅ What’s Included
 
 ### Strategies
@@ -167,7 +176,11 @@ Common files:
 
 ## 📄 Report
 
-See: `report/optimization.md`
+See:
+- `report/optimization.md`
+- `report/architecture_overview.md`
+- `report/experiment_playbook.md`
+- `report/results_interpretation.md`
 
 ---
 
