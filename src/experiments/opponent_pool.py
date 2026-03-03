@@ -5,7 +5,7 @@ from src.strategies.lookup_table import LookupTableStrategy  # Strategy using a 
 def random_strategy(n=64):  # Create a random bitstring of length n.
     return ''.join(random.choice('01') for _ in range(n))  # Choose 0/1 for each position.
 
-def get_opponent_pool(seed=42, num_random=10):  # Build a reproducible opponent pool.
+def get_opponent_pool(seed=42, num_random=10, memory_depth=3):  # Build a reproducible opponent pool.
     random.seed(seed)  # Fix RNG for repeatable pools.
     pool = [  # Start with standard baseline opponents.
         ALLC("ALLC"),
@@ -15,8 +15,15 @@ def get_opponent_pool(seed=42, num_random=10):  # Build a reproducible opponent 
         TF2T("TF2T"),
         STFT("STFT"),
     ]
+    lut_length = 4 ** memory_depth
     for i in range(num_random):  # Add random lookup-table opponents.
-        pool.append(LookupTableStrategy(random_strategy(64), name=f"RND_LUT_{i}"))  # Append each.
+        pool.append(
+            LookupTableStrategy(
+                random_strategy(lut_length),
+                name=f"RND_LUT_{i}",
+                memory_depth=memory_depth
+            )
+        )  # Append each.
     return pool  # Return the full list of opponents.
 
 if __name__ == "__main__":  # Run a quick check when executed directly.

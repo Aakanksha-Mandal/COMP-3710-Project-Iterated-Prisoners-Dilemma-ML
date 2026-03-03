@@ -1,25 +1,94 @@
-Optimization Methods
+# Optimization Methods
 
-To discover high-performing strategies for the Iterated Prisoner’s Dilemma, we implemented and compared two optimization methods: a Genetic Algorithm (GA) and Hill Climbing.
+To discover high-performing strategies for the Iterated Prisoner’s Dilemma (IPD), we implemented and compared two optimization methods: a Genetic Algorithm (GA) and Hill Climbing.
 
-Strategy Representation
+## Strategy Representation
 
-Each strategy was represented as a 64-bit lookup table. Each bit corresponds to a specific history of the previous three rounds. Since each round has four possible outcomes (CC, CD, DC, DD), there are 4³ = 64 possible histories. Each bit determines whether the strategy cooperates (0) or defects (1) in that situation.
+Strategies are lookup-table policies with configurable memory depth $d$. Each state is a sequence of the previous outcomes (CC, CD, DC, DD), so the chromosome length is:
 
-Fitness Evaluation
+$$
+4^d
+$$
 
-The fitness of a strategy was defined as its average score when playing matches against a fixed opponent pool. Each match consisted of 200 rounds. The opponent pool included human-designed strategies (ALLC, ALLD, RAND, TFT, TF2T, STFT) and randomly generated lookup-table strategies.
+- For memory depth 3, this is 64 bits.
+- For memory depth 5, this is 1024 bits.
 
-Genetic Algorithm
+Each bit maps to an action in that state: cooperate (0) or defect (1).
 
-The Genetic Algorithm maintained a population of candidate strategies. Each generation consisted of selection, crossover, mutation, and elitism. Selection favored strategies with higher fitness. Crossover combined portions of parent strategies, and mutation randomly flipped bits with a small probability. Elitism preserved the best strategies unchanged between generations. The algorithm was run for 200 generations with a population size of 80.
+## Fitness Evaluation
 
-Hill Climbing
+Fitness is the average score of a strategy against a fixed opponent pool, with 200 rounds per match.
 
-Hill Climbing started from a random strategy and repeatedly improved it by flipping individual bits. If the modified strategy had higher fitness, it replaced the current strategy. This process continued for 5000 iterations.
+Opponent pool includes:
+- Baselines: ALLC, ALLD, RAND, TFT, TF2T, STFT
+- Random lookup-table opponents
 
-Results
+## Genetic Algorithm (GA)
 
-Both optimization methods successfully discovered strategies that performed competitively against baseline strategies. The Genetic Algorithm achieved higher fitness overall and demonstrated stable convergence over generations. Hill Climbing also improved fitness but was more likely to become trapped in local optima.
+GA uses selection, crossover, mutation, and elitism.
 
-These results demonstrate that evolutionary optimization methods are effective at discovering strong strategies in the Iterated Prisoner’s Dilemma.
+Core settings used in the main sweep (`ga_runs_summary.csv`):
+- Population size: 80
+- Generations: 200
+- Crossover rate: 0.8
+- Elite size: 2
+- Mutation rates tested: 0.0005, 0.001, 0.005
+
+### GA Results Summary (current)
+
+From `results/tables/ga_runs_summary.csv`:
+- Best run: mutation rate **0.001** with best fitness **708.8125**
+- Other runs:
+	- 0.0005 → 672.75
+	- 0.005 → 705.1875
+
+This indicates moderate mutation gave the strongest overall result in this setup.
+
+## Hill Climbing
+
+Hill Climbing starts from a random strategy and flips one bit at a time, accepting improving moves.
+
+Current run (`results/tables/hill_best.csv`):
+- Iterations: 5000
+- Best fitness: **573.5**
+
+## Comparison and Behavior
+
+From `results/tables/comparison.csv`:
+- GA_BEST average score: **699.375**
+- HILL_BEST average score: **567.75**
+
+So GA outperforms Hill Climbing on this benchmark.
+
+From `results/tables/ga_best_vs_baselines.csv`, GA_BEST is highly exploitative:
+- Very strong vs ALLC (+980 total)
+- Positive vs TF2T and RAND
+- Ties with TFT and STFT
+- Slightly loses to ALLD (-20)
+
+This pattern suggests the evolved policy is not purely cooperative; it is closer to opportunistic/defection-heavy behavior.
+
+## Convergence Trend (GA)
+
+Using `ga_fitness_history_run2.csv` (the best GA configuration):
+- Rapid gains in early generations
+- Improvements slow and mostly plateau after roughly generation 60
+- Occasional late spikes, with best observed at generation 123
+
+## Memory Depth 3 vs 5 Status
+
+Depth comparison tooling is now implemented (`run_ga_depth_sweep.py`), but a full multi-seed depth conclusion has not yet been finalized in this report.
+
+To run a fair depth comparison:
+
+```powershell
+python -m src.experiments.run_ga_depth_sweep --depths 3,5 --seeds 42,43,44 --generations 200 --population-size 80 --mutation-rate 0.001 --tag d3_vs_d5
+```
+
+Then compare:
+- `results/tables/ga_depth_sweep_runs_d3_vs_d5.csv`
+- `results/tables/ga_depth_sweep_summary_d3_vs_d5.csv`
+
+## Conclusion
+
+Current evidence shows evolutionary optimization is effective for IPD lookup-table strategy discovery, with GA substantially outperforming Hill Climbing under the tested settings. The depth-3 vs depth-5 performance question is now experimentally supported by tooling and should be concluded after full sweep outputs are generated and analyzed.

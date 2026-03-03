@@ -20,6 +20,7 @@ class GAConfig:  # Holds GA hyperparameters.
     elite_size: int = 2  # How many top individuals to copy unchanged.
     rounds: int = 200  # Rounds per match for fitness evaluation.
     seed: int = 42  # Random seed for reproducibility.
+    memory_depth: int = 3  # Number of previous rounds encoded in lookup table.
 
 
 def _tournament_select(population, fitnesses, k=3):  # Selects one parent by tournament.
@@ -50,7 +51,8 @@ def _mutate(bitstring: str, mutation_rate: float):  # Bit-flip mutation operator
 def run_ga(opponent_pool, config: GAConfig):  # Main GA training loop.
     random.seed(config.seed)  # Set seed for reproducibility.
 
-    population = [random_strategy(64) for _ in range(config.population_size)]  # Init population.
+    chromosome_length = 4 ** config.memory_depth
+    population = [random_strategy(chromosome_length) for _ in range(config.population_size)]  # Init population.
 
     history = []  # Track fitness stats per generation.
     best_overall = None  # Best chromosome seen so far.
@@ -59,7 +61,7 @@ def run_ga(opponent_pool, config: GAConfig):  # Main GA training loop.
     for gen in range(config.generations):  # Loop over generations.
         fitnesses = []  # Fitness values for the current population.
         for i, chrom in enumerate(population):  # Evaluate each chromosome.
-            strat = LookupTableStrategy(chrom, name=f"GA_{gen}_{i}")  # Wrap as strategy.
+            strat = LookupTableStrategy(chrom, name=f"GA_{gen}_{i}", memory_depth=config.memory_depth)  # Wrap as strategy.
             fit = evaluate_strategy(strat, opponent_pool, rounds=config.rounds)  # Compute fitness.
             fitnesses.append(fit)  # Store fitness.
 
