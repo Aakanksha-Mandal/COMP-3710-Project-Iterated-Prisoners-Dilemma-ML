@@ -1,3 +1,10 @@
 .DS_Store
 __pycache__/
 *.pyc
+
+# Generated experiment outputs (keep the folder, ignore files)
+results/tables/*.csv
+
+# Optional figure exports
+results/figures/*
+!results/figures/.gitkeep
